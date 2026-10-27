@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Console · Public APIs 目录控制台</title>
+<meta name="description" content="Public APIs 目录查询控制台：搜索、分类筛选、收藏与导出">
+<style>
+/* ============ tokens ============ */
+:root{
+  --bg:#0a0d13;
+  --bg-grad:radial-gradient(1200px 600px at 80% -10%, #101827 0%, rgba(16,24,39,0) 60%);
+  --surface:#11161f;
+  --surface-2:#161d29;
+  --raised:#1b2331;
+  --raised-2:#202a3b;
+  --border:#232c3d;
+  --border-strong:#2e3a50;
+  --text:#e8ecf4;
+  --text-2:#a6aebf;
+  --text-3:#6f7889;
+  --accent:#5b8cff;
+  --accent-soft:rgba(91,140,255,.12);
+  --accent-line:rgba(91,140,255,.35);
+  --ok:#3ecf9e;
+  --warn:#d9a441;
+  --bad:#e06a75;
+  --unknown:#8b93a7;
+  --radius:10px;
+  --radius-sm:7px;
+  --shadow-1:0 1px 2px rgba(0,0,0,.35);
+  --shadow-2:0 8px 28px rgba(0,0,0,.45);
+  --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  background-image:var(--bg-grad);
+  color:var(--text);
+  font-family:var(--font);
+  font-size:14px;
+  line-height:1.5;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#263041;border-radius:99px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#33405a}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ topbar ============ */
+.topbar{
+  height:58px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:0 18px;
+  border-bottom:1px solid var(--border);
+  background:rgba(10,13,19,.82);
+  backdrop-filter:blur(10px);
+  position:relative;
+  z-index:30;
+}
+.brand{display:flex;align-items:center;gap:11px;min-width:196px}
+.brand-mark{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,#2c4a8f,#5b8cff);
+  display:grid;place-items:center;
+  color:#fff;font-size:15px;font-weight:700;
+  box-shadow:0 2px 10px rgba(91,140,255,.35);
+}
+.brand h1{font-size:15px;font-weight:650;letter-spacing:.2px;line-height:1.15}
+.brand p{font-size:11.5px;color:var(--text-3);line-height:1.15}
+
+.search{
+  flex:1;max-width:560px;min-width:220px;
+  position:relative;display:flex;align-items:center;
+}
+.search input{
+  width:100%;height:36px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  color:var(--text);
+  padding:0 38px 0 34px;
+  font-size:13.5px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s, background .15s;
+}
+.search input::placeholder{color:var(--text-3)}
+.search input:focus{
+  border-color:var(--accent-line);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  background:var(--surface-2);
+}
+.search svg{position:absolute;left:11px;color:var(--text-3);pointer-events:none}
+.search kbd{
+  position:absolute;right:10px;
+  font-family:var(--mono);font-size:11px;color:var(--text-3);
+  background:var(--raised);border:1px solid var(--border);
+  border-bottom-width:2px;border-radius:5px;padding:1px 6px;
+}
+
+.metrics{display:flex;gap:22px;margin-left:auto}
+.metric{display:flex;flex-direction:column;line-height:1.2}
+.metric b{font-size:15px;font-weight:650;font-variant-numeric:tabular-nums}
+.metric span{font-size:10.5px;color:var(--text-3);letter-spacing:.4px;text-transform:uppercase}
+.metric.hot b{color:var(--accent)}
+.top-actions{display:flex;gap:8px}
+.btn{
+  height:34px;padding:0 13px;border-radius:var(--radius-sm);
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;font-weight:550;
+  background:var(--raised);color:var(--text-2);
+  border:1px solid var(--border);
+  transition:background .13s,color .13s,border-color .13s;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--raised-2);color:var(--text);border-color:var(--border-strong)}
+.btn svg{width:14px;height:14px}
+.btn.primary{
+  background:var(--accent);color:#fff;border-color:transparent;
+  box-shadow:0 2px 8px rgba(91,140,255,.3);
+}
+.btn.primary:hover{background:#6d97ff}
+.btn .caret{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;margin-left:2px}
+.menu-anchor{position:relative}
+.menu{
+  position:absolute;right:0;top:42px;
+  background:var(--raised);border:1px solid var(--border-strong);
+  border-radius:var(--radius);box-shadow:var(--shadow-2);
+  padding:6px;min-width:200px;z-index:60;
+  display:none;
+}
+.menu.open{display:block}
+.menu button{
+  width:100%;text-align:left;padding:8px 10px;border-radius:6px;
+  font-size:12.5px;color:var(--text-2);display:flex;align-items:center;gap:9px;
+}
+.menu button:hover{background:var(--surface-2);color:var(--text)}
+.menu button svg{width:14px;height:14px;color:var(--text-3)}
+
+/* ============ layout ============ */
+.layout{display:flex;height:calc(100% - 58px)}
+.filters{
+  width:246px;flex-shrink:0;
+  border-right:1px solid var(--border);
+  background:rgba(13,17,25,.6);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.filters-scroll{flex:1;overflow-y:auto;padding:14px 14px 20px}
+.filters::-webkit-scrollbar-thumb,.filters-scroll::-webkit-scrollbar-thumb{border-color:#0d1120}
+.filter-group{margin-bottom:20px}
+.filter-title{
+  font-size:10.5px;font-weight:650;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.filter-title .count{margin-left:auto;font-weight:500}
+.cat-list{display:flex;flex-direction:column;gap:1px}
+.cat-item{
+  display:flex;align-items:center;gap:9px;
+  padding:5.5px 8px;border-radius:6px;
+  font-size:12.5px;color:var(--text-2);
+  cursor:pointer;user-select:none;
+  transition:background .1s,color .1s;
+}
+.cat-item:hover{background:var(--surface-2);color:var(--text)}
+.cat-item.active{background:var(--accent-soft);color:var(--accent);font-weight:550}
+.cat-item .sw{
+  width:14px;height:14px;border-radius:4px;border:1.5px solid var(--border-strong);
+  flex-shrink:0;display:grid;place-items:center;
+  transition:background .12s,border-color .12s;
+}
+.cat-item.active .sw{background:var(--accent);border-color:var(--accent)}
+.cat-item .sw svg{width:9px;height:9px;color:#fff;opacity:0;transform:scale(.5);transition:.12s}
+.cat-item.active .sw svg{opacity:1;transform:scale(1)}
+.cat-item .n{margin-left:auto;font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.cat-item.active .n{color:var(--accent)}
+.cat-search{
+  width:100%;height:30px;margin-bottom:6px;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);padding:0 9px;font-size:12px;outline:none;
+}
+.cat-search:focus{border-color:var(--accent-line)}
+.cat-all{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;
+  font-size:12px;color:var(--text-3);cursor:pointer;border-radius:6px;
+}
+.cat-all:hover{color:var(--text);background:var(--surface-2)}
+
+.opt-row{
+  display:flex;align-items:center;gap:9px;padding:6px 2px;
+  cursor:pointer;user-select:none;font-size:12.5px;color:var(--text-2);
+}
+.opt-row:hover{color:var(--text)}
+.opt-row input{display:none}
+.opt-box{
+  width:30px;height:17px;border-radius:99px;background:var(--raised);
+  border:1px solid var(--border-strong);position:relative;flex-shrink:0;
+  transition:background .15s,border-color .15s;
+}
+.opt-box::after{
+  content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--text-3);transition:transform .15s,background .15s;
+}
+.opt-row input:checked + .opt-box{background:var(--accent);border-color:var(--accent)}
+.opt-row input:checked + .opt-box::after{transform:translateX(13px);background:#fff}
+.opt-sub{font-size:10.5px;color:var(--text-3);margin-left:2px}
+
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:99px;font-size:11.5px;
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--text-2);cursor:pointer;user-select:none;margin:0 5px 5px 0;
+  transition:.12s;
+}
+.chip:hover{border-color:var(--border-strong);color:var(--text)}
+.chip.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.chip .dot{width:6px;height:6px;border-radius:50%}
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ============ results ============ */
+.results{flex:1;display:flex;flex-direction:column;min-width:0}
+.toolbar{
+  height:46px;flex-shrink:0;
+  display:flex;align-items:center;gap:14px;
+  padding:0 18px;border-bottom:1px solid var(--border);
+  background:rgba(11,15,23,.7);
+}
+.toolbar .result-count{font-size:12.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.toolbar .result-count b{color:var(--text);font-weight:650}
+.toolbar .spacer{flex:1}
+.seg{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:2px}
+.seg button{
+  height:24px;padding:0 10px;border-radius:5px;font-size:11.5px;color:var(--text-3);
+  display:inline-flex;align-items:center;gap:5px;
+}
+.seg button.active{background:var(--raised-2);color:var(--text)}
+.seg button svg{width:12px;height:12px}
+.pill{
+  height:26px;padding:0 10px;border-radius:99px;font-size:11.5px;
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface);border:1px solid var(--border);color:var(--text-2);
+}
+.pill.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.pill .x{font-size:13px;line-height:1;opacity:.7}
+.pill .x:hover{opacity:1}
+
+.scroll{flex:1;overflow-y:auto;padding:16px 18px 40px}
+.grid{
+  display:grid;gap:10px;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+}
+.grid.list{grid-template-columns:1fr}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:13px 14px;
+  display:flex;flex-direction:column;gap:8px;
+  cursor:pointer;position:relative;
+  transition:border-color .14s,background .14s,transform .1s,box-shadow .14s;
+}
+.card:hover{
+  border-color:var(--border-strong);
+  background:var(--surface-2);
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-1);
+}
+.card.fav{border-color:rgba(217,164,65,.38)}
+.card.hidden-row{opacity:.45}
+.card .row1{display:flex;align-items:flex-start;gap:9px}
+.card .name{font-size:13.5px;font-weight:620;color:var(--text);line-height:1.3;overflow-wrap:anywhere}
+.card .fav-btn{
+  margin-left:auto;flex-shrink:0;width:24px;height:24px;border-radius:6px;
+  display:grid;place-items:center;color:var(--text-3);
+  transition:.12s;
+}
+.card .fav-btn:hover{background:var(--raised-2);color:var(--warn)}
+.card.fav .fav-btn{color:var(--warn)}
+.card .desc{
+  font-size:12px;color:var(--text-2);line-height:1.5;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.card .row3{display:flex;align-items:center;gap:6px;margin-top:2px}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:600;letter-spacing:.2px;
+  padding:2.5px 8px;border-radius:99px;
+  background:var(--raised);border:1px solid var(--border);
+  color:var(--text-3);font-variant-numeric:tabular-nums;
+}
+.badge .dot{width:5.5px;height:5.5px;border-radius:50%}
+.badge.auth{color:var(--text-2)}
+.badge.https-yes .dot{background:var(--ok);box-shadow:0 0 6px rgba(62,207,158,.6)}
+.badge.https-no .dot{background:var(--bad)}
+.badge.cors-yes .dot{background:var(--ok)}
+.badge.cors-no .dot{background:var(--bad)}
+.badge.cors-unknown .dot{background:var(--unknown)}
+.cat-tag{
+  font-size:10.5px;color:var(--accent);
+  background:var(--accent-soft);border:1px solid var(--accent-line);
+  padding:2.5px 8px;border-radius:99px;margin-left:auto;
+  max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.card .go{
+  margin-left:auto;flex-shrink:0;width:24px;height:24px;border-radius:6px;
+  display:grid;place-items:center;color:var(--text-3);
+}
+.card .go:hover{background:var(--raised-2);color:var(--accent)}
+.grid.list .card{flex-direction:row;align-items:center;gap:14px;padding:11px 14px}
+.grid.list .card .desc{-webkit-line-clamp:1;flex:1;min-width:0;margin-right:8px}
+.grid.list .card .desc{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grid.list .card .row1{flex:none;width:260px}
+.grid.list .card .row3{margin:0;flex:none}
+.grid.list .card .cat-tag{margin-left:0;max-width:180px}
+
+.sentinel{height:1px}
+.need-more{
+  grid-column:1/-1;text-align:center;padding:24px 0 8px;color:var(--text-3);font-size:12px;
+}
+.empty{
+  grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-3);
+}
+.empty .big{font-size:34px;margin-bottom:10px;opacity:.8}
+.empty p{font-size:13px}
+.empty .hint{margin-top:6px;font-size:12px;color:var(--text-3)}
+.spinner{
+  grid-column:1/-1;display:grid;place-items:center;padding:70px;
+}
+.spinner i{
+  width:26px;height:26px;border-radius:50%;
+  border:2.5px solid var(--border-strong);border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ drawer ============ */
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:410px;max-width:92vw;
+  background:var(--raised);border-left:1px solid var(--border-strong);
+  box-shadow:-18px 0 50px rgba(0,0,0,.5);
+  transform:translateX(105%);transition:transform .24s cubic-bezier(.3,.7,.3,1);
+  z-index:80;display:flex;flex-direction:column;
+}
+.drawer.open{transform:translateX(0)}
+.drawer-head{
+  padding:18px 20px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:12px;
+}
+.drawer-head h2{font-size:16px;font-weight:650;line-height:1.3;overflow-wrap:anywhere;flex:1}
+.drawer-close{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--text-3);flex-shrink:0}
+.drawer-close:hover{background:var(--surface-2);color:var(--text)}
+.drawer-body{flex:1;overflow-y:auto;padding:16px 20px 20px}
+.d-field{margin-bottom:16px}
+.d-label{font-size:10.5px;font-weight:650;letter-spacing:.6px;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.d-value{font-size:13px;color:var(--text);line-height:1.55}
+.d-url{
+  font-family:var(--mono);font-size:11.5px;color:var(--accent);
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:7px;padding:8px 10px;word-break:break-all;line-height:1.5;
+}
+.d-badges{display:flex;flex-wrap:wrap;gap:8px}
+.drawer-foot{
+  padding:14px 20px;border-top:1px solid var(--border);
+  display:flex;gap:8px;
+}
+.drawer-foot .btn{flex:1;justify-content:center}
+
+/* ============ misc ============ */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);
+  background:var(--raised-2);border:1px solid var(--border-strong);
+  color:var(--text);font-size:12.5px;padding:9px 16px;border-radius:9px;
+  box-shadow:var(--shadow-2);opacity:0;pointer-events:none;
+  transition:.2s;z-index:100;display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:14px;height:14px;color:var(--ok)}
+
+/* ============ mobile ============ */
+@media (max-width:900px){
+  .metrics{display:none}
+  .filters{
+    position:fixed;top:58px;left:0;bottom:0;z-index:50;
+    transform:translateX(-105%);transition:transform .22s ease;
+    width:280px;background:var(--raised);box-shadow:18px 0 40px rgba(0,0,0,.4);
+  }
+  .filters.open{transform:translateX(0)}
+  .filter-toggle{
+    display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;
+    border-radius:7px;background:var(--surface);border:1px solid var(--border);
+    color:var(--text-2);font-size:12px;margin-right:8px;
+  }
+  .topbar{padding:0 12px;gap:10px}
+  .brand{min-width:0}
+  .brand p{display:none}
+  .search{max-width:none}
+  .grid{grid-template-columns:1fr}
+  .grid.list .card{flex-direction:column;align-items:stretch;gap:7px}
+  .grid.list .card .row1{width:100%}
+  .drawer{width:100%;max-width:100%}
+}
+@media (min-width:901px){.filter-toggle{display:none}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">▣</div>
+    <div>
+      <h1>API Console</h1>
+      <p>Public APIs 目录控制台</p>
+    </div>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="搜索名称、描述、链接… 输入 / 聚焦">
+    <kbd>/</kbd>
+  </label>
+  <div class="metrics">
+    <div class="metric hot"><b id="mTotal">0</b><span>APIs</span></div>
+    <div class="metric"><b id="mCats">0</b><span>分类</span></div>
+    <div class="metric"><b id="mHttps">0%</b><span>HTTPS</span></div>
+    <div class="metric"><b id="mUpdated">–</b><span>同步</span></div>
+  </div>
+  <div class="top-actions">
+    <button class="btn filter-toggle" id="filterToggle">筛选</button>
+    <div class="menu-anchor">
+      <button class="btn" id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+        导出 <span class="caret"></span>
+      </button>
+      <div class="menu" id="exportMenu">
+        <button data-fmt="json"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>下载筛选结果 JSON</button>
+        <button data-fmt="csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>下载筛选结果 CSV</button>
+        <button data-fmt="clip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>复制结果 JSON 到剪贴板</button>
+        <button data-fmt="favjson"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9a5.5 5.5 0 0 1 10-3.2A5.5 5.5 0 0 1 22 12c-2.5 4.4-10 9-10 9z"/></svg>收藏列表 JSON</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="filters" id="filters">
+    <div class="filters-scroll">
+      <div class="filter-group">
+        <div class="filter-title">Categories <span class="count" id="catCount"></span></div>
+        <input class="cat-search" id="catSearch" type="text" placeholder="筛选分类…">
+        <div class="cat-all" id="catAll"><span class="sw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>全选 / 清除</div>
+        <div class="cat-list" id="catList"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="filter-group">
+        <div class="filter-title">Auth</div>
+        <div id="authList"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="filter-group">
+        <div class="filter-title">连接与跨域</div>
+        <label class="opt-row"><input type="checkbox" id="httpsOnly"><span class="opt-box"></span>仅 HTTPS <span class="opt-sub" id="httpsPct"></span></label>
+        <label class="opt-row"><input type="checkbox" id="corsYes"><span class="opt-box"></span>仅允许 CORS</label>
+      </div>
+      <div class="divider"></div>
+      <div class="filter-group">
+        <div class="filter-title">排序</div>
+        <div id="sortChips"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="filter-group">
+        <div class="filter-title">本地调节</div>
+        <label class="opt-row"><input type="checkbox" id="favOnly"><span class="opt-box"></span>仅看收藏 <span class="opt-sub" id="favCount"></span></label>
+        <button class="opt-row" id="clearHidden" style="width:100%"><span style="width:30px;height:17px;flex-shrink:0"></span>清除已隐藏条目</button>
+        <button class="opt-row" id="clearAllLocal" style="width:100%"><span style="width:30px;height:17px;flex-shrink:0"></span>清空本地状态</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="results">
+    <div class="toolbar">
+      <div class="result-count"><b id="rCount">0</b> / <span id="rTotal">0</span> 条</div>
+      <div class="spacer"></div>
+      <div class="seg" id="viewSeg">
+        <button data-view="grid" title="卡片视图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+        <button data-view="list" title="列表视图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></button>
+      </div>
+    </div>
+    <div class="scroll" id="scroll">
+      <div class="grid" id="grid"></div>
+    </div>
+  </main>
+</div>
+
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2 id="dName"></h2>
+    <button class="drawer-close" id="dClose" title="关闭 (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="drawer-body">
+    <div class="d-field"><div class="d-label">描述</div><div class="d-value" id="dDesc"></div></div>
+    <div class="d-field"><div class="d-label">链接</div><div class="d-url" id="dUrl"></div></div>
+    <div class="d-field"><div class="d-label">分类</div><div class="d-value" id="dCat"></div></div>
+    <div class="d-field"><div class="d-label">属性</div><div class="d-badges" id="dBadges"></div></div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn" id="dFav">☆ 收藏</button>
+    <button class="btn" id="dHide">隐藏</button>
+    <button class="btn primary" id="dOpen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>打开链接</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ================= data ================= */
+let DB = null;             // {generated, total, categories:[{name, apis:[…]}]}
+let flat = [];             // [{name,url,description,auth,https,cors,category}] with id
+let catMeta = [];          // [{name,count}]
+let authSet = [];          // distinct auth values
+const KEY_FAV  = "apiconsole.fav.v1";
+const KEY_HIDE = "apiconsole.hide.v1";
+const KEY_STATE= "apiconsole.state.v1";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ================= state ================= */
+const state = {
+  q:"", cats:new Set(), auth:new Set(), httpsOnly:false, corsYes:false,
+  sort:"rel", favOnly:false, view:"grid", catSearch:"", cursor:0, perPage:120
+};
+const store = { fav:new Set(), hide:new Set() };
+
+function loadStore(){
+  try{ store.fav = new Set(JSON.parse(localStorage.getItem(KEY_FAV)||"[]")); }catch(e){}
+  try{ store.hide = new Set(JSON.parse(localStorage.getItem(KEY_HIDE)||"[]")); }catch(e){}
+}
+function saveFav(){ localStorage.setItem(KEY_FAV, JSON.stringify([...store.fav])); }
+function saveHide(){ localStorage.setItem(KEY_HIDE, JSON.stringify([...store.hide])); }
+const idOf = a => a.category + "\u0000" + a.name + "\u0000" + a.url;
+
+function parseHash(){
+  try{
+    const h = JSON.parse(decodeURIComponent(location.hash.slice(1)||"{}"));
+    if(typeof h.q==="string") state.q=h.q;
+    if(Array.isArray(h.cats)) state.cats=new Set(h.cats);
+    if(Array.isArray(h.auth)) state.auth=new Set(h.auth);
+    if(typeof h.httpsOnly==="boolean") state.httpsOnly=h.httpsOnly;
+    if(typeof h.corsYes==="boolean") state.corsYes=h.corsYes;
+    if(typeof h.sort==="string") state.sort=h.sort;
+    if(typeof h.favOnly==="boolean") state.favOnly=h.favOnly;
+    if(h.view==="grid"||h.view==="list") state.view=h.view;
+  }catch(e){}
+}
+function writeHash(){
+  const h = {
+    q:state.q, cats:[...state.cats], auth:[...state.auth],
+    httpsOnly:state.httpsOnly, corsYes:state.corsYes,
+    sort:state.sort, favOnly:state.favOnly, view:state.view
+  };
+  history.replaceState(null,"","#"+encodeURIComponent(JSON.stringify(h)));
+}
+
+/* ================= data load ================= */
+async function load(){
+  const res = await fetch("data.json", {cache:"no-store"});
+  if(!res.ok) throw new Error("data.json "+res.status);
+  DB = await res.json();
+  flat = [];
+  DB.categories.forEach(c => c.apis.forEach(a => flat.push(Object.assign({},a,{category:c.name}))));
+  flat.forEach(a => a.id = idOf(a));
+  catMeta = DB.categories
+    .map(c => ({name:c.name, count:c.apis.length, visible:c.apis.some(a=>!store.hide.has(idOf(a)))}))
+    .sort((a,b)=>b.count-a.count);
+  authSet = [...new Set(flat.map(a=>a.auth))].sort((a,b)=>a.localeCompare(b));
+  renderAll();
+  updateMetrics();
+}
+
+/* ================= filtering ================= */
+function filter(){
+  const q = state.q.trim().toLowerCase();
+  let out = flat.filter(a => {
+    if(state.cats.size && !state.cats.has(a.category)) return false;
+    if(state.auth.size && !state.auth.has(a.auth)) return false;
+    if(state.httpsOnly && !a.https) return false;
+    if(state.corsYes && a.cors!=="Yes") return false;
+    if(state.favOnly && !store.fav.has(a.id)) return false;
+    if(q){
+      if(a.name.toLowerCase().includes(q)) return true;
+      if(a.description.toLowerCase().includes(q)) return true;
+      if(a.url.toLowerCase().includes(q)) return true;
+      return false;
+    }
+    return true;
+  });
+  const favRank = a => store.fav.has(a.id) ? -1 : 1;
+  switch(state.sort){
+    case "name": out.sort((a,b)=>a.name.localeCompare(b.name)); break;
+    case "cat":  out.sort((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name)); break;
+    case "fav":  out.sort((a,b)=>favRank(a)-favRank(b)||a.name.localeCompare(b.name)); break;
+    default:     out.sort((a,b)=>favRank(a)-favRank(b)||a.name.localeCompare(b.name));
+  }
+  return out;
+}
+
+/* ================= render ================= */
+let renderTimer=null;
+function render(delta=false){
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(()=>doRender(delta), delta?30:0);
+}
+function doRender(resetCursor=false){
+  if(resetCursor) state.cursor = 0;
+  const out = filter();
+  $("#rCount").textContent = out.length;
+  $("#rTotal").textContent = DB ? DB.total : 0;
+  const grid = $("#grid");
+  grid.classList.toggle("list", state.view==="list");
+  const slice = out.slice(0, state.cursor + state.perPage);
+  const frag = document.createDocumentFragment();
+  for(const a of slice){
+    const c = document.createElement("article");
+    c.className = "card" + (store.fav.has(a.id)?" fav":"") + (store.hide.has(a.id)?" hidden-row":"");
+    c.dataset.idx = flat.indexOf(a);
+    const fav = store.fav.has(a.id) ? "★" : "☆";
+    c.innerHTML =
+      `<div class="row1">
+        <div class="name">${esc(a.name)}</div>
+        <button class="fav-btn" title="收藏">${fav}</button>
+        <button class="go" title="打开链接"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg></button>
+      </div>
+      <div class="desc">${esc(a.description)}</div>
+      <div class="row3">
+        <span class="badge auth"><span class="dot" style="background:var(--text-3)"></span>${esc(a.auth)}</span>
+        <span class="badge https-${a.https?"yes":"no"}"><span class="dot"></span>${a.https?"HTTPS":"HTTP"}</span>
+        <span class="badge cors-${a.cors.toLowerCase()}"><span class="dot"></span>CORS ${esc(a.cors)}</span>
+        <span class="cat-tag">${esc(a.category)}</span>
+      </div>`;
+    c.addEventListener("click", ev => {
+      if(ev.target.closest(".fav-btn")){ toggleFav(a); return; }
+      if(ev.target.closest(".go")){ window.open(a.url,"_blank","noopener"); return; }
+      openDrawer(a);
+    });
+    frag.appendChild(c);
+  }
+  grid.innerHTML = "";
+  grid.appendChild(frag);
+  if(slice.length < out.length){
+    const m = document.createElement("div");
+    m.className = "need-more"; m.id = "needMore";
+    m.textContent = "已显示 " + slice.length + " / " + out.length + " 条 · 上滑加载更多";
+    grid.appendChild(m);
+  } else if(out.length === 0){
+    grid.innerHTML = `<div class="empty"><div class="big">∅</div><p>没有匹配的 API</p><p class="hint">试试放宽筛选条件，或清空搜索词</p></div>`;
+  }
+}
+function onScroll(){
+  const sc = $("#scroll");
+  if(sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 400){
+    const out = filter();
+    if(state.cursor + state.perPage < out.length){
+      state.cursor += state.perPage;
+      doRender(false);
+    }
+  }
+}
+
+/* ================= sidebars ================= */
+function renderCats(){
+  const list = $("#catList");
+  const qs = state.catSearch.trim().toLowerCase();
+  const shown = catMeta.filter(c => !qs || c.name.toLowerCase().includes(qs));
+  const frag = document.createDocumentFragment();
+  for(const c of shown){
+    const d = document.createElement("div");
+    d.className = "cat-item" + (state.cats.has(c.name) ? " active" : "");
+    d.innerHTML = `<span class="sw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span><span>${esc(c.name)}</span><span class="n">${c.count}</span>`;
+    d.addEventListener("click", ()=>{
+      if(state.cats.has(c.name)) state.cats.delete(c.name);
+      else state.cats.add(c.name);
+      renderCats(); render(true); writeHash();
+    });
+    frag.appendChild(d);
+  }
+  list.innerHTML=""; list.appendChild(frag);
+  $("#catCount").textContent = state.cats.size ? state.cats.size+" 选中" : "";
+}
+function renderAuth(){
+  const box = $("#authList");
+  box.innerHTML="";
+  for(const a of authSet){
+    const l = document.createElement("label");
+    l.className = "chip" + (state.auth.has(a)?" active":"");
+    l.innerHTML = `<span class="dot" style="background:${authColor(a)}"></span>${esc(a)}`;
+    l.addEventListener("click", ()=>{
+      if(state.auth.has(a)) state.auth.delete(a); else state.auth.add(a);
+      renderAuth(); render(true); writeHash();
+    });
+    box.appendChild(l);
+  }
+}
+function authColor(a){
+  if(a==="No") return "var(--ok)";
+  if(a==="apiKey") return "var(--accent)";
+  if(a==="OAuth") return "var(--warn)";
+  if(a==="X-Mashape-Key") return "#b48be0";
+  return "var(--unknown)";
+}
+function renderSort(){
+  const opts = [["rel","默认"],["name","名称 A→Z"],["cat","分类"],["fav","收藏优先"]];
+  const box = $("#sortChips"); box.innerHTML="";
+  for(const [v,t] of opts){
+    const c = document.createElement("span");
+    c.className = "chip" + (state.sort===v?" active":"");
+    c.textContent = t;
+    c.addEventListener("click", ()=>{ state.sort=v; renderSort(); render(true); writeHash(); });
+    box.appendChild(c);
+  }
+}
+
+/* ================= metrics / misc ================= */
+function updateMetrics(){
+  if(!DB) return;
+  const httpsN = flat.filter(a=>a.https).length;
+  $("#mTotal").textContent = DB.total.toLocaleString();
+  $("#mCats").textContent = DB.categories.length;
+  $("#mHttps").textContent = Math.round(httpsN/flat.length*100)+"%";
+  $("#mUpdated").textContent = (DB.generated||"").slice(5,10).replace("-","/");
+  $("#httpsPct").textContent = Math.round(httpsN/flat.length*100)+"%";
+  $("#favCount").textContent = store.fav.size ? store.fav.size+" 条" : "";
+}
+function toast(msg){
+  const t = $("#toast");
+  t.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>${esc(msg)}`;
+  t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1900);
+}
+
+/* ================= favorites / hide ================= */
+function toggleFav(a){
+  if(store.fav.has(a.id)){ store.fav.delete(a.id); toast("已取消收藏："+a.name); }
+  else{ store.fav.add(a.id); toast("已收藏："+a.name); }
+  saveFav(); updateMetrics();
+  rePaintCard(a); refreshDrawer(a);
+  render(true);
+}
+function toggleHide(a){
+  if(store.hide.has(a.id)){ store.hide.delete(a.id); toast("已恢复显示："+a.name); }
+  else{ store.hide.add(a.id); toast("已隐藏："+a.name); }
+  saveHide(); reRenderAll(); refreshDrawer(a);
+}
+function rePaintCard(a){
+  const i = flat.indexOf(a);
+  const card = document.querySelector(`.card[data-idx="${i}"]`);
+  if(card){
+    card.classList.toggle("fav", store.fav.has(a.id));
+    card.classList.toggle("hidden-row", store.hide.has(a.id));
+    card.querySelector(".fav-btn").textContent = store.fav.has(a.id)?"★":"☆";
+  }
+}
+function reRenderAll(){ render(true); }
+
+/* ================= drawer ================= */
+let current = null;
+function openDrawer(a){
+  current = a;
+  $("#dName").textContent = a.name;
+  $("#dDesc").textContent = a.description;
+  $("#dUrl").textContent = a.url;
+  $("#dCat").textContent = a.category;
+  $("#dBadges").innerHTML =
+    `<span class="badge auth"><span class="dot" style="background:${authColor(a.auth)}"></span>${esc(a.auth)}</span>` +
+    `<span class="badge https-${a.https?"yes":"no"}"><span class="dot"></span>${a.https?"HTTPS":"HTTP"}</span>` +
+    `<span class="badge cors-${a.cors.toLowerCase()}"><span class="dot"></span>CORS ${esc(a.cors)}</span>`;
+  $("#dFav").textContent = store.fav.has(a.id) ? "★ 已收藏" : "☆ 收藏";
+  $("#dHide").textContent = store.hide.has(a.id) ? "恢复显示" : "隐藏";
+  $("#drawer").classList.add("open");
+}
+function refreshDrawer(a){
+  if(current && current.id===a.id){
+    $("#dFav").textContent = store.fav.has(a.id) ? "★ 已收藏" : "☆ 收藏";
+    $("#dHide").textContent = store.hide.has(a.id) ? "恢复显示" : "隐藏";
+  }
+}
+function closeDrawer(){ $("#drawer").classList.remove("open"); current=null; }
+
+/* ================= export ================= */
+function currentResults(){ return filter(); }
+function download(name, content, mime){
+  const blob = new Blob([content], {type:mime||"application/octet-stream"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+function toCSV(rows){
+  const head = ["name","category","description","url","auth","https","cors"];
+  const q = v => '"' + String(v).replace(/"/g,'""') + '"';
+  return [head.join(",")].concat(rows.map(r=>[r.name,r.category,r.description,r.url,r.auth,r.https?"Yes":"No",r.cors].map(q).join(","))).join("\r\n");
+}
+function exportAs(fmt){
+  const rows = currentResults().map(a=>({name:a.name,category:a.category,description:a.description,url:a.url,auth:a.auth,https:a.https,cors:a.cors}));
+  if(fmt==="json") download("public-apis-filtered.json", JSON.stringify(rows,null,2), "application/json");
+  else if(fmt==="csv") download("public-apis-filtered.csv", toCSV(rows), "text/csv");
+  else if(fmt==="clip"){
+    navigator.clipboard.writeText(JSON.stringify(rows,null,2)).then(()=>toast("已复制 "+rows.length+" 条到剪贴板")).catch(()=>toast("复制失败"));
+  }else if(fmt==="favjson"){
+    const favs = flat.filter(a=>store.fav.has(a.id)).map(a=>({name:a.name,category:a.category,description:a.description,url:a.url,auth:a.auth,https:a.https,cors:a.cors}));
+    download("public-apis-favorites.json", JSON.stringify(favs,null,2), "application/json");
+  }
+  $("#exportMenu").classList.remove("open");
+}
+
+/* ================= events ================= */
+function bind(){
+  let deb=null;
+  $("#q").addEventListener("input", e=>{
+    state.q = e.target.value;
+    clearTimeout(deb); deb=setTimeout(()=>{render(true);writeHash();},140);
+  });
+  $("#q").addEventListener("keydown", e=>{
+    if(e.key==="Escape"){ e.target.value=""; state.q=""; render(true); writeHash(); }
+  });
+  $("#catSearch").addEventListener("input", e=>{ state.catSearch=e.target.value; renderCats(); });
+  $("#catAll").addEventListener("click", ()=>{
+    if(state.cats.size) state.cats.clear(); else catMeta.forEach(c=>state.cats.add(c.name));
+    renderCats(); render(true); writeHash();
+  });
+  $("#httpsOnly").addEventListener("change", e=>{ state.httpsOnly=e.target.checked; render(true); writeHash(); });
+  $("#corsYes").addEventListener("change", e=>{ state.corsYes=e.target.checked; render(true); writeHash(); });
+  $("#favOnly").addEventListener("change", e=>{ state.favOnly=e.target.checked; render(true); writeHash(); });
+  $("#favOnly").checked = state.favOnly;
+  $("#httpsOnly").checked = state.httpsOnly;
+  $("#corsYes").checked = state.corsYes;
+  $("#viewSeg").addEventListener("click", e=>{
+    const b = e.target.closest("[data-view]"); if(!b) return;
+    state.view = b.dataset.view;
+    document.querySelectorAll("#viewSeg button").forEach(x=>x.classList.toggle("active", x===b));
+    render(true); writeHash();
+  });
+  $("#filterToggle").addEventListener("click", ()=>$("#filters").classList.toggle("open"));
+  $("#exportBtn").addEventListener("click", e=>{ e.stopPropagation(); $("#exportMenu").classList.toggle("open"); });
+  document.addEventListener("click", e=>{
+    if(!e.target.closest(".menu-anchor")) $("#exportMenu").classList.remove("open");
+  });
+  $("#exportMenu").addEventListener("click", e=>{ const b=e.target.closest("[data-fmt]"); if(b) exportAs(b.dataset.fmt); });
+  $("#dClose").addEventListener("click", closeDrawer);
+  $("#dFav").addEventListener("click", ()=>current&&toggleFav(current));
+  $("#dHide").addEventListener("click", ()=>current&&toggleHide(current));
+  $("#dOpen").addEventListener("click", ()=>{ if(current) window.open(current.url,"_blank","noopener"); });
+  $("#clearHidden").addEventListener("click", ()=>{
+    const n = store.hide.size; store.hide.clear(); saveHide();
+    toast("已恢复 "+n+" 条隐藏条目"); reRenderAll();
+  });
+  $("#clearAllLocal").addEventListener("click", ()=>{
+    store.fav.clear(); store.hide.clear(); saveFav(); saveHide();
+    toast("已清空收藏与隐藏记录"); updateMetrics(); reRenderAll();
+  });
+  $("#scroll").addEventListener("scroll", onScroll);
+  document.addEventListener("keydown", e=>{
+    if(e.key==="/" && document.activeElement!==$("#q")){ e.preventDefault(); $("#q").focus(); }
+    if(e.key==="Escape" && !current){ $("#q").blur(); }
+    if(e.key==="Escape" && current) closeDrawer();
+  });
+}
+
+/* ================= init ================= */
+function renderAll(){
+  renderCats(); renderAuth(); renderSort(); bind(); render(true); writeHash();
+}
+(async function init(){
+  loadStore(); parseHash();
+  $("#q").value = state.q;
+  $("#favOnly").checked = state.favOnly; $("#httpsOnly").checked = state.httpsOnly; $("#corsYes").checked = state.corsYes;
+  document.querySelector(`#viewSeg button[data-view="${state.view}"]`).classList.add("active");
+  try{ await load(); }
+  catch(err){
+    $("#grid").innerHTML = `<div class="empty"><div class="big">⚠</div><p>无法加载 data.json：${esc(err.message)}</p><p class="hint">请确认 data.json 与 index.html 在同一目录</p></div>`;
+  }
+})();
+</script>
+</body>
+</html>
